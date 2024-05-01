@@ -59,6 +59,8 @@ import java.util.UUID
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private val locationPermissionRequestCode = 100
+    private val REQUEST_BLUETOOTH_SCAN_PERMISSION = 101 // 自定义的请求码
+    private val REQUEST_BLUETOOTH_CONNECT_PERMISSION = 1 // 自定义的请求码
 
     // 蓝牙扫描
     private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
@@ -66,6 +68,16 @@ class MainActivity : ComponentActivity() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
             val device = result.device
+            if (ActivityCompat.checkSelfPermission(
+                    baseContext,
+                    permission.BLUETOOTH_CONNECT
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+
+                println("scan no permission")
+                return
+            }
+            println("device:"+ device.name)
             // 将设备添加到列表中
             addToDeviceList(device)
         }
@@ -78,8 +90,8 @@ class MainActivity : ComponentActivity() {
 
     private var deviceList: MutableList<BluetoothDevice> = mutableListOf()
     private val deviceAdapter = DeviceAdapter(deviceList)
-    val REQUEST_LOCATION_PERMISSION = 100
     private fun startScan() {
+        Log.d("debug", "start scan")
         val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
         if (bluetoothLeScanner == null) {
             Toast.makeText(this, "bluetoothLeScanner is null", Toast.LENGTH_SHORT).show()
@@ -91,22 +103,35 @@ class MainActivity : ComponentActivity() {
             .build()
 
         val filters = emptyList<ScanFilter>() // 如果有需要，可以添加过滤条件
+
+        // 扫描权限
         if (ActivityCompat.checkSelfPermission(
                 this,
                 permission.BLUETOOTH_SCAN
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+            // 请求权限
+            ActivityCompat.requestPermissions(this,
+                arrayOf(permission.BLUETOOTH_SCAN),
+                REQUEST_BLUETOOTH_SCAN_PERMISSION)
+            return
+        }
+        // 连接权限
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // 请求权限
+            ActivityCompat.requestPermissions(this,
+                arrayOf(permission.BLUETOOTH_CONNECT),
+                REQUEST_BLUETOOTH_CONNECT_PERMISSION)
             return
         }
         bluetoothLeScanner.startScan(filters, scanSettings, scanCallback)
     }
+
+
 
     private fun stopScan() {
         if (ActivityCompat.checkSelfPermission(
@@ -171,7 +196,6 @@ class MainActivity : ComponentActivity() {
         // 注意：这里只是示例，你需要自己实现选择设备并进行连接
         // connectToDevice(device)
 
-
         val exeBtn: Button = findViewById(R.id.execButton)
         val cmdText :EditText = findViewById(R.id.command)
         exeBtn.setOnClickListener{
@@ -179,6 +203,7 @@ class MainActivity : ComponentActivity() {
             sendData(cmdText.text.toString())
         }
 
+        Log.d("debug", "load scanner")
 
         // 手动扫描蓝牙
         val selectBtn: Button = findViewById(R.id.scanBlooth)
@@ -200,25 +225,7 @@ class MainActivity : ComponentActivity() {
         if (!bluetoothAdapter.isEnabled) {
             bluetoothAdapter.enable()
         }
-
-        // 检查位置权限
-        if (ContextCompat.checkSelfPermission(this, permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                arrayOf(permission.ACCESS_FINE_LOCATION),
-                REQUEST_LOCATION_PERMISSION)
-        } else {
-            startScan()
-        }
-
-
     }
-
-
-
-
-
-
 
     private fun connectToDevice(device: BluetoothDevice) {
         // 尝试连接设备
@@ -368,34 +375,29 @@ class MainActivity : ComponentActivity() {
 class DeviceAdapter(private val devices: List<BluetoothDevice>) : RecyclerView.Adapter<DeviceAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.activity_main, parent, false)
+        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_layout, parent, false)
         return ViewHolder(itemView)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        println("onBindViewHolder")
         val device = devices[position]
         if (ActivityCompat.checkSelfPermission(
                 holder.itemView.context,
                 permission.BLUETOOTH_CONNECT
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+            println(" no permission")
+            // 请求权限
             return
         }
         holder.deviceName.text = device.name
-        // 如果需要显示更多信息，可以添加更多的holder视图并设置它们
     }
 
     override fun getItemCount(): Int = devices.size
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val deviceName: TextView = itemView.findViewById(R.id.recyclerView)
+        val deviceName: TextView = itemView.findViewById(R.id.tv_item)
         // 如果有其他视图，可以在这里初始化它们
     }
 
