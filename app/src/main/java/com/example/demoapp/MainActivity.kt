@@ -12,6 +12,10 @@ import android.Manifest.permission
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
@@ -19,6 +23,8 @@ import android.location.Location
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.LayoutInflater
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.compose.setContent
@@ -49,11 +55,84 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.UUID
 
+
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private val locationPermissionRequestCode = 100
 
     // 蓝牙扫描
+    private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+    private val scanCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            super.onScanResult(callbackType, result)
+            val device = result.device
+            // 将设备添加到列表中
+            addToDeviceList(device)
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            super.onScanFailed(errorCode)
+            // 处理扫描失败
+        }
+    }
+
+    private var deviceList: MutableList<BluetoothDevice> = mutableListOf()
+    private val deviceAdapter = DeviceAdapter(deviceList)
+    val REQUEST_LOCATION_PERMISSION = 100
+    private fun startScan() {
+        val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
+        if (bluetoothLeScanner == null) {
+            Toast.makeText(this, "bluetoothLeScanner is null", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val scanSettings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .build()
+
+        val filters = emptyList<ScanFilter>() // 如果有需要，可以添加过滤条件
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                permission.BLUETOOTH_SCAN
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
+        bluetoothLeScanner.startScan(filters, scanSettings, scanCallback)
+    }
+
+    private fun stopScan() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                permission.BLUETOOTH_SCAN
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
+        bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
+    }
+
+    private fun addToDeviceList(device: BluetoothDevice) {
+        if (!deviceList.contains(device)) {
+            deviceList.add(device)
+            deviceAdapter.notifyItemInserted(deviceList.size - 1)
+        }
+    }
+
 
     // 蓝牙连接发送指令
     private val TAG = "BluetoothCommActivity"
@@ -104,10 +183,37 @@ class MainActivity : ComponentActivity() {
         // 手动扫描蓝牙
         val selectBtn: Button = findViewById(R.id.scanBlooth)
         selectBtn.setOnClickListener{
+            startScan()
+        }
+
+        // 假设你有一个RecyclerView来显示设备列表
+        val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = deviceAdapter
+
+        if (bluetoothAdapter == null) {
+            // 蓝牙不可用，显示错误信息
+            // ...
+            return
+        }
+
+        if (!bluetoothAdapter.isEnabled) {
+            bluetoothAdapter.enable()
+        }
+
+        // 检查位置权限
+        if (ContextCompat.checkSelfPermission(this, permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                arrayOf(permission.ACCESS_FINE_LOCATION),
+                REQUEST_LOCATION_PERMISSION)
+        } else {
+            startScan()
         }
 
 
     }
+
 
 
 
@@ -255,6 +361,42 @@ class MainActivity : ComponentActivity() {
                 Toast.makeText(this, "Location permission denied", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+}
+
+class DeviceAdapter(private val devices: List<BluetoothDevice>) : RecyclerView.Adapter<DeviceAdapter.ViewHolder>() {
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.activity_main, parent, false)
+        return ViewHolder(itemView)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val device = devices[position]
+        if (ActivityCompat.checkSelfPermission(
+                holder.itemView.context,
+                permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
+        holder.deviceName.text = device.name
+        // 如果需要显示更多信息，可以添加更多的holder视图并设置它们
+    }
+
+    override fun getItemCount(): Int = devices.size
+
+    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val deviceName: TextView = itemView.findViewById(R.id.recyclerView)
+        // 如果有其他视图，可以在这里初始化它们
     }
 
 }
