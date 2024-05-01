@@ -77,7 +77,6 @@ class MainActivity : ComponentActivity() {
                 println("scan no permission")
                 return
             }
-            println("device:"+ device.name)
             // 将设备添加到列表中
             addToDeviceList(device)
         }
@@ -188,18 +187,20 @@ class MainActivity : ComponentActivity() {
         }
 
 
-        // 发送指令
-        // 假设你已经通过某种方式选择了设备（比如通过扫描）
-        // val device: BluetoothDevice = ...
 
-        // 尝试连接
-        // 注意：这里只是示例，你需要自己实现选择设备并进行连接
-        // connectToDevice(device)
 
         val exeBtn: Button = findViewById(R.id.execButton)
         val cmdText :EditText = findViewById(R.id.command)
         exeBtn.setOnClickListener{
             // 发送数据
+            // 发送指令
+            // 假设你已经通过某种方式选择了设备（比如通过扫描）
+            val device: BluetoothDevice = deviceList[0]
+
+            // 尝试连接
+            // 注意：这里只是示例，你需要自己实现选择设备并进行连接
+            connectToDevice(device)
+            Log.d("debug", "execute:" + cmdText.text.toString())
             sendData(cmdText.text.toString())
         }
 
@@ -236,30 +237,14 @@ class MainActivity : ComponentActivity() {
                 permission.BLUETOOTH_CONNECT
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+            // 请求权限
+            ActivityCompat.requestPermissions(this,
+                arrayOf(permission.BLUETOOTH_CONNECT),
+                REQUEST_BLUETOOTH_CONNECT_PERMISSION)
+            Log.d("debug", "connectToDevice lack of BLUETOOTH_CONNECT")
             return
         }
         bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return
-        }
         bluetoothSocket?.connect()
 
         // 获取输入输出流
@@ -267,7 +252,7 @@ class MainActivity : ComponentActivity() {
         inputStream = bluetoothSocket?.inputStream
 
         // 连接成功后的处理
-        Log.d(TAG, "Connected to device")
+        Log.d("debug", "Connected to device")
 
         // 在这里开始监听接收到的数据
         listenForIncomingData()
@@ -277,7 +262,7 @@ class MainActivity : ComponentActivity() {
         // 发送数据到蓝牙设备
         // 注意：这里只是一个示例，你需要确保outputStream不为null
         outputStream?.write(data.toByteArray())
-        Log.d(TAG, "Sent data: $data")
+        Log.d("debug", "Sent data: $data")
     }
 
     private fun listenForIncomingData() {
