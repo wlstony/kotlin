@@ -195,7 +195,7 @@ class MainActivity : ComponentActivity() {
         val exeBtn: Button = findViewById(R.id.execButton)
         val cmdText :EditText = findViewById(R.id.commandText)
         exeBtn.setOnClickListener{
-            Toast.makeText(this, "click", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "执行:" + cmdText.text.toString(), Toast.LENGTH_SHORT).show()
 
             val device: BluetoothDevice = deviceList[0]
             connectToDevice(device)
@@ -243,31 +243,33 @@ class MainActivity : ComponentActivity() {
             Log.d(LogTag, "connectToDevice lack of BLUETOOTH_CONNECT")
             return
         }
+        Log.d(LogTag, "try to connect " + device.address )
+
         bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
 
         bluetoothSocket?.let { socket ->
             try {
                 // 尝试连接，如果bluetoothSocket不为null，connect()方法将被调用
                 socket.connect()
-                println("Bluetooth socket connected successfully.")
+
+                Log.d(LogTag,"Bluetooth socket connected successfully.")
+                // 获取输入输出流
+                outputStream = bluetoothSocket?.outputStream
+                inputStream = bluetoothSocket?.inputStream
+
+                // 连接成功后的处理
+                Log.d(LogTag, "listenForIncomingData")
+                // 在这里开始监听接收到的数据
+                listenForIncomingData()
             } catch (e: IOException) {
                 // 捕获并处理IOException，这是connect()方法可能抛出的异常类型
-                println("Failed to connect to Bluetooth socket: ${e.message}")
+                Log.d(LogTag,"Failed to connect to Bluetooth socket: ${e.message}")
+
                 e.printStackTrace() // 可选，用于在日志中打印完整的堆栈跟踪
             }
         } ?: run {
-            println("Bluetooth socket is null, cannot connect.")
+            Log.d(LogTag,"Bluetooth socket is null, cannot connect.")
         }
-
-        // 获取输入输出流
-        outputStream = bluetoothSocket?.outputStream
-        inputStream = bluetoothSocket?.inputStream
-
-        // 连接成功后的处理
-        Log.d(LogTag, "Connected to device")
-
-        // 在这里开始监听接收到的数据
-        listenForIncomingData()
     }
 
     private fun sendData(data: String) {
