@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
 
-                println("scan no permission")
+                Log.d(LogTag,"scan no permission")
                 return
             }
             // 将设备添加到列表中
@@ -83,14 +83,17 @@ class MainActivity : ComponentActivity() {
 
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
-            // 处理扫描失败
+            Log.d(LogTag, "扫描失败")
         }
     }
 
     private var deviceList: MutableList<BluetoothDevice> = mutableListOf()
     private val deviceAdapter = DeviceAdapter(deviceList)
+
+    // 蓝牙连接发送指令
+    private val LogTag = "blue_debug"
     private fun startScan() {
-        Log.d("debug", "start scan")
+        Log.d(LogTag, "start scan")
         val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
         if (bluetoothLeScanner == null) {
             Toast.makeText(this, "scanner is null, open bluetooth?", Toast.LENGTH_SHORT).show()
@@ -152,14 +155,14 @@ class MainActivity : ComponentActivity() {
 
     private fun addToDeviceList(device: BluetoothDevice) {
         if (!deviceList.contains(device)) {
+            Log.d(LogTag, "add device" + device.name +"," + device.address)
             deviceList.add(device)
             deviceAdapter.notifyItemInserted(deviceList.size - 1)
         }
     }
 
 
-    // 蓝牙连接发送指令
-    private val TAG = "BluetoothCommActivity"
+
     private var bluetoothSocket: BluetoothSocket? = null
     private var outputStream: OutputStream? = null
     private var inputStream: InputStream? = null
@@ -200,7 +203,7 @@ class MainActivity : ComponentActivity() {
             sendData(cmd)
         }
 
-        Log.d("debug", "load scanner")
+        Log.d(LogTag, "load scanner")
 
         // 手动扫描蓝牙
         val selectBtn: Button = findViewById(R.id.scanBlooth)
@@ -237,7 +240,7 @@ class MainActivity : ComponentActivity() {
             ActivityCompat.requestPermissions(this,
                 arrayOf(permission.BLUETOOTH_CONNECT),
                 REQUEST_BLUETOOTH_CONNECT_PERMISSION)
-            Log.d("debug", "connectToDevice lack of BLUETOOTH_CONNECT")
+            Log.d(LogTag, "connectToDevice lack of BLUETOOTH_CONNECT")
             return
         }
         bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
@@ -255,23 +258,24 @@ class MainActivity : ComponentActivity() {
         } ?: run {
             println("Bluetooth socket is null, cannot connect.")
         }
+
         // 获取输入输出流
-        outputStream = bluetoothSocket.outputStream
-        inputStream = bluetoothSocket.inputStream
+        outputStream = bluetoothSocket?.outputStream
+        inputStream = bluetoothSocket?.inputStream
 
         // 连接成功后的处理
-        Log.d("debug", "Connected to device")
+        Log.d(LogTag, "Connected to device")
 
         // 在这里开始监听接收到的数据
         listenForIncomingData()
     }
 
     private fun sendData(data: String) {
-        Log.d("debug", "Sent data: $data")
+        Log.d(LogTag, "Sent data: $data")
         if(outputStream == null) {
             println("sendData output is null")
         } else {
-            outputStream.write(data.toByteArray())
+            outputStream?.write(data.toByteArray())
 
         }
     }
@@ -288,7 +292,7 @@ class MainActivity : ComponentActivity() {
                     // 读取输入流中的数据
                     bytes = inputStream?.read(buffer) ?: break
                     val incomingMessage = String(buffer, 0, bytes)
-                    Log.d(TAG, "Received data: $incomingMessage")
+                    Log.d(LogTag, "Received data: $incomingMessage")
 
                     // 在UI线程中更新UI
                     Handler(Looper.getMainLooper()).post {
@@ -369,6 +373,7 @@ class MainActivity : ComponentActivity() {
 }
 
 class DeviceAdapter(private val devices: List<BluetoothDevice>) : RecyclerView.Adapter<DeviceAdapter.ViewHolder>() {
+    private val LogTag = "blue_debug"
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_layout, parent, false)
@@ -376,18 +381,18 @@ class DeviceAdapter(private val devices: List<BluetoothDevice>) : RecyclerView.A
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        println("onBindViewHolder")
+        Log.d(LogTag,"onBindViewHolder")
         val device = devices[position]
         if (ActivityCompat.checkSelfPermission(
                 holder.itemView.context,
                 permission.BLUETOOTH_CONNECT
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            println(" no permission")
+            Log.d(LogTag,"no BLUETOOTH_CONNECT permission")
             // 请求权限
             return
         }
-        holder.deviceName.text = device.name
+        holder.deviceName.text = device.name +","+ device.address
     }
 
     override fun getItemCount(): Int = devices.size
