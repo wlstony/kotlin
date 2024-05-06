@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
         Log.d("debug", "start scan")
         val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
         if (bluetoothLeScanner == null) {
-            Toast.makeText(this, "bluetoothLeScanner is null", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "scanner is null, open bluetooth?", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -190,18 +190,14 @@ class MainActivity : ComponentActivity() {
 
 
         val exeBtn: Button = findViewById(R.id.execButton)
-        val cmdText :EditText = findViewById(R.id.command)
+        val cmdText :EditText = findViewById(R.id.commandText)
         exeBtn.setOnClickListener{
-            // 发送数据
-            // 发送指令
-            // 假设你已经通过某种方式选择了设备（比如通过扫描）
-            val device: BluetoothDevice = deviceList[0]
+            Toast.makeText(this, "click", Toast.LENGTH_SHORT).show()
 
-            // 尝试连接
-            // 注意：这里只是示例，你需要自己实现选择设备并进行连接
+            val device: BluetoothDevice = deviceList[0]
             connectToDevice(device)
-            Log.d("debug", "execute:" + cmdText.text.toString())
-            sendData(cmdText.text.toString())
+            val cmd: String = cmdText.text.toString()
+            sendData(cmd)
         }
 
         Log.d("debug", "load scanner")
@@ -245,11 +241,23 @@ class MainActivity : ComponentActivity() {
             return
         }
         bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
-        bluetoothSocket?.connect()
 
+        bluetoothSocket?.let { socket ->
+            try {
+                // 尝试连接，如果bluetoothSocket不为null，connect()方法将被调用
+                socket.connect()
+                println("Bluetooth socket connected successfully.")
+            } catch (e: IOException) {
+                // 捕获并处理IOException，这是connect()方法可能抛出的异常类型
+                println("Failed to connect to Bluetooth socket: ${e.message}")
+                e.printStackTrace() // 可选，用于在日志中打印完整的堆栈跟踪
+            }
+        } ?: run {
+            println("Bluetooth socket is null, cannot connect.")
+        }
         // 获取输入输出流
-        outputStream = bluetoothSocket?.outputStream
-        inputStream = bluetoothSocket?.inputStream
+        outputStream = bluetoothSocket.outputStream
+        inputStream = bluetoothSocket.inputStream
 
         // 连接成功后的处理
         Log.d("debug", "Connected to device")
@@ -259,10 +267,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun sendData(data: String) {
-        // 发送数据到蓝牙设备
-        // 注意：这里只是一个示例，你需要确保outputStream不为null
-        outputStream?.write(data.toByteArray())
         Log.d("debug", "Sent data: $data")
+        if(outputStream == null) {
+            println("sendData output is null")
+        } else {
+            outputStream.write(data.toByteArray())
+
+        }
     }
 
     private fun listenForIncomingData() {
