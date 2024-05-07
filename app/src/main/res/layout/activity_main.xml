@@ -10,7 +10,7 @@
         android:layout_height="200dp"
         android:ems="10"
         android:inputType="text"
-        android:hint="请输入指令文本" />
+        android:hint="请输入指令文本v1" />
 
     <TextView
         android:id="@+id/showResponse"

@@ -217,8 +217,7 @@ class MainActivity : ComponentActivity() {
         recyclerView.adapter = deviceAdapter
 
         if (bluetoothAdapter == null) {
-            // 蓝牙不可用，显示错误信息
-            // ...
+            Toast.makeText(this, "蓝牙adapter为空", Toast.LENGTH_SHORT).show()
             return
         }
 
