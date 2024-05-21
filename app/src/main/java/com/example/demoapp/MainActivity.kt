@@ -189,9 +189,6 @@ class MainActivity : ComponentActivity() {
 
         }
 
-
-
-
         val exeBtn: Button = findViewById(R.id.execButton)
         val cmdText :EditText = findViewById(R.id.commandText)
         exeBtn.setOnClickListener{
@@ -204,12 +201,6 @@ class MainActivity : ComponentActivity() {
         }
 
         Log.d(LogTag, "load scanner")
-
-        // 手动扫描蓝牙
-        val selectBtn: Button = findViewById(R.id.scanBlooth)
-        selectBtn.setOnClickListener{
-            startScan()
-        }
 
         // 假设你有一个RecyclerView来显示设备列表
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
@@ -224,6 +215,14 @@ class MainActivity : ComponentActivity() {
         if (!bluetoothAdapter.isEnabled) {
             bluetoothAdapter.enable()
         }
+
+        // 手动扫描蓝牙
+        val selectBtn: Button = findViewById(R.id.scanBlooth)
+        selectBtn.setOnClickListener{
+            startScan()
+        }
+
+
     }
 
     private fun connectToDevice(device: BluetoothDevice) {
