@@ -139,18 +139,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun stopScan() {
-        if (ActivityCompat.checkSelfPermission(
+        Log.d(blueDebug, "执行指令,停止扫描")
+        if (androidVersion > 12 && ActivityCompat.checkSelfPermission(
                 this,
                 permission.BLUETOOTH_SCAN
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+
             return
         }
         bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
@@ -194,6 +189,7 @@ class MainActivity : ComponentActivity() {
         val exeBtn: Button = findViewById(R.id.execButton)
         val cmdText :EditText = findViewById(R.id.commandText)
         exeBtn.setOnClickListener{
+            stopScan()
             Toast.makeText(this, "执行:" + cmdText.text.toString(), Toast.LENGTH_SHORT).show()
 
             val device: BluetoothDevice = deviceList[0]
@@ -231,7 +227,7 @@ class MainActivity : ComponentActivity() {
         // 尝试连接设备
         // 这里只是一个示例，你需要处理异常和错误情况
         val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB") // SPP UUID，根据实际情况修改
-        if (ActivityCompat.checkSelfPermission(
+        if (androidVersion > 12 && ActivityCompat.checkSelfPermission(
                 this,
                 permission.BLUETOOTH_CONNECT
             ) != PackageManager.PERMISSION_GRANTED
@@ -262,12 +258,14 @@ class MainActivity : ComponentActivity() {
                 // 在这里开始监听接收到的数据
                 listenForIncomingData()
             } catch (e: IOException) {
+                Toast.makeText(this, "Failed to connect to Bluetooth socket: ${e.message}", Toast.LENGTH_SHORT).show()
+
                 // 捕获并处理IOException，这是connect()方法可能抛出的异常类型
                 Log.d(blueDebug,"Failed to connect to Bluetooth socket: ${e.message}")
-
                 e.printStackTrace() // 可选，用于在日志中打印完整的堆栈跟踪
             }
         } ?: run {
+            Toast.makeText(this, "Bluetooth socket is null, cannot connect.", Toast.LENGTH_SHORT).show()
             Log.d(blueDebug,"Bluetooth socket is null, cannot connect.")
         }
     }
@@ -275,7 +273,8 @@ class MainActivity : ComponentActivity() {
     private fun sendData(data: String) {
         Log.d(blueDebug, "Sent data: $data")
         if(outputStream == null) {
-            println("sendData output is null")
+            Toast.makeText(this, "Sent data: $data, outputStream is null", Toast.LENGTH_SHORT).show()
+            Log.d(blueDebug,"sendData output is null")
         } else {
             outputStream?.write(data.toByteArray())
 
