@@ -17,9 +17,6 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
-import android.content.BroadcastReceiver
-import android.content.Intent
-import android.content.IntentFilter
 import android.location.Location
 import android.os.Handler
 import android.os.Looper
@@ -28,25 +25,12 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
-import androidx.activity.compose.setContent
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.demoapp.ui.theme.DemoAPPTheme
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationToken
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -61,8 +45,8 @@ import java.util.UUID
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private val locationPermissionRequestCode = 100
-    private val REQUEST_BLUETOOTH_SCAN_PERMISSION = 101 // 自定义的请求码
-    private val REQUEST_BLUETOOTH_CONNECT_PERMISSION = 1 // 自定义的请求码
+    private val bluetoothPermissionScan = 101 // 自定义的请求码
+    private val bluetoothPermissionConnect = 102 // 自定义的请求码
 
     // 蓝牙扫描
     private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
@@ -85,7 +69,7 @@ class MainActivity : ComponentActivity() {
 
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
-            Log.d(LogTag, "扫描失败")
+            Log.d(LogTag, "扫描失败$errorCode")
         }
     }
     private var deviceList: MutableList<BluetoothDevice> = mutableListOf()
@@ -108,7 +92,7 @@ class MainActivity : ComponentActivity() {
         val filters = emptyList<ScanFilter>() // 如果有需要，可以添加过滤条件
 
         // 扫描权限
-        if (androidVersion != 0 && androidVersion > 12 &&
+        if (androidVersion > 12 &&
             ActivityCompat.checkSelfPermission(
                 this,
                 permission.BLUETOOTH_SCAN
@@ -117,11 +101,11 @@ class MainActivity : ComponentActivity() {
             // 请求权限
             ActivityCompat.requestPermissions(this,
                 arrayOf(permission.BLUETOOTH_SCAN),
-                REQUEST_BLUETOOTH_SCAN_PERMISSION)
+                bluetoothPermissionScan)
             return
         }
         // 连接权限
-        if (androidVersion != 0 && androidVersion > 12 && ActivityCompat.checkSelfPermission(
+        if ( androidVersion > 12 && ActivityCompat.checkSelfPermission(
                 this,
                 permission.BLUETOOTH_CONNECT
             ) != PackageManager.PERMISSION_GRANTED
@@ -129,7 +113,21 @@ class MainActivity : ComponentActivity() {
             // 请求权限
             ActivityCompat.requestPermissions(this,
                 arrayOf(permission.BLUETOOTH_CONNECT),
-                REQUEST_BLUETOOTH_CONNECT_PERMISSION)
+                bluetoothPermissionConnect)
+            return
+        }
+        // 还需要定位权限
+        // java.lang.SecurityException: Need ACCESS_COARSE_LOCATION or ACCESS_FINE_LOCATION permission to get scan results
+        if ( androidVersion > 6 && ActivityCompat.checkSelfPermission(
+                this,
+                permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // 请求权限
+            ActivityCompat.requestPermissions(this,
+                arrayOf(permission.ACCESS_FINE_LOCATION),
+                locationPermissionRequestCode
+                )
             return
         }
         bluetoothLeScanner.startScan(filters, scanSettings, scanCallback)
@@ -249,7 +247,7 @@ class MainActivity : ComponentActivity() {
             // 请求权限
             ActivityCompat.requestPermissions(this,
                 arrayOf(permission.BLUETOOTH_CONNECT),
-                REQUEST_BLUETOOTH_CONNECT_PERMISSION)
+                bluetoothPermissionConnect)
             Log.d(LogTag, "connectToDevice lack of BLUETOOTH_CONNECT")
             return
         }
@@ -380,7 +378,7 @@ class MainActivity : ComponentActivity() {
                 Toast.makeText(this, "Location permission denied", Toast.LENGTH_LONG).show()
             }
         }
-        if (requestCode == REQUEST_BLUETOOTH_SCAN_PERMISSION) {
+        if (requestCode == bluetoothPermissionScan) {
             if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED){
                 Toast.makeText(this, "BlueTooth scan permission denied", Toast.LENGTH_LONG).show()
             }
