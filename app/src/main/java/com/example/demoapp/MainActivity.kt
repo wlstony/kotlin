@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.Build
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
@@ -53,6 +54,7 @@ import com.google.android.gms.tasks.OnTokenCanceledListener
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.HashMap
 import java.util.UUID
 
 
@@ -86,10 +88,9 @@ class MainActivity : ComponentActivity() {
             Log.d(LogTag, "扫描失败")
         }
     }
-
     private var deviceList: MutableList<BluetoothDevice> = mutableListOf()
     private val deviceAdapter = DeviceAdapter(deviceList)
-
+    private val androidVersion = getAndroidVersion()
     // 蓝牙连接发送指令
     private val LogTag = "blue_debug"
     private fun startScan() {
@@ -107,7 +108,8 @@ class MainActivity : ComponentActivity() {
         val filters = emptyList<ScanFilter>() // 如果有需要，可以添加过滤条件
 
         // 扫描权限
-        if (ActivityCompat.checkSelfPermission(
+        if (androidVersion != 0 && androidVersion > 12 &&
+            ActivityCompat.checkSelfPermission(
                 this,
                 permission.BLUETOOTH_SCAN
             ) != PackageManager.PERMISSION_GRANTED
@@ -119,7 +121,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         // 连接权限
-        if (ActivityCompat.checkSelfPermission(
+        if (androidVersion != 0 && androidVersion > 12 && ActivityCompat.checkSelfPermission(
                 this,
                 permission.BLUETOOTH_CONNECT
             ) != PackageManager.PERMISSION_GRANTED
@@ -134,6 +136,17 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    private fun getAndroidVersion(): Int {
+        val sdkVersion = Build.VERSION.SDK_INT
+        val map = HashMap<Int, Int>()
+        map[Build.VERSION_CODES.O_MR1] = 8
+        map[Build.VERSION_CODES.P] = 9
+        map[Build.VERSION_CODES.Q] = 10
+        map[Build.VERSION_CODES.R] = 11
+        map[Build.VERSION_CODES.S] = 12
+
+        return map[sdkVersion] ?:100
+    }
 
     private fun stopScan() {
         if (ActivityCompat.checkSelfPermission(
@@ -171,7 +184,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-
         // 发送定位的代码
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         val sendLocationBtn: Button = findViewById(R.id.uploadLocation)
@@ -208,7 +220,7 @@ class MainActivity : ComponentActivity() {
         recyclerView.adapter = deviceAdapter
 
         if (bluetoothAdapter == null) {
-            Toast.makeText(this, "蓝牙adapter为空", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "蓝牙adapter为空,设备似乎不支持蓝牙", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -368,8 +380,12 @@ class MainActivity : ComponentActivity() {
                 Toast.makeText(this, "Location permission denied", Toast.LENGTH_LONG).show()
             }
         }
+        if (requestCode == REQUEST_BLUETOOTH_SCAN_PERMISSION) {
+            if (grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this, "BlueTooth scan permission denied", Toast.LENGTH_LONG).show()
+            }
+        }
     }
-
 }
 
 class DeviceAdapter(private val devices: List<BluetoothDevice>) : RecyclerView.Adapter<DeviceAdapter.ViewHolder>() {
