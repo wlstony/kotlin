@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import android.Manifest.permission
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
@@ -54,31 +55,22 @@ class MainActivity : ComponentActivity() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
             val device = result.device
-            if (ActivityCompat.checkSelfPermission(
-                    baseContext,
-                    permission.BLUETOOTH_CONNECT
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-
-                Log.d(LogTag,"scan no permission")
-                return
-            }
             // 将设备添加到列表中
             addToDeviceList(device)
         }
 
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
-            Log.d(LogTag, "扫描失败$errorCode")
+            Log.d(blueDebug, "扫描失败$errorCode")
         }
     }
     private var deviceList: MutableList<BluetoothDevice> = mutableListOf()
     private val deviceAdapter = DeviceAdapter(deviceList)
     private val androidVersion = getAndroidVersion()
     // 蓝牙连接发送指令
-    private val LogTag = "blue_debug"
+    private val blueDebug = "blue_debug"
     private fun startScan() {
-        Log.d(LogTag, "start scan")
+        Log.d(blueDebug, "start scan")
         val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
         if (bluetoothLeScanner == null) {
             Toast.makeText(this, "scanner is null, open bluetooth?", Toast.LENGTH_SHORT).show()
@@ -166,7 +158,7 @@ class MainActivity : ComponentActivity() {
 
     private fun addToDeviceList(device: BluetoothDevice) {
         if (!deviceList.contains(device)) {
-            Log.d(LogTag, "add device" + device.name +"," + device.address)
+            Log.d(blueDebug, "add device " + device.name +"," + device.address)
             deviceList.add(device)
             deviceAdapter.notifyItemInserted(deviceList.size - 1)
         }
@@ -210,7 +202,7 @@ class MainActivity : ComponentActivity() {
             sendData(cmd)
         }
 
-        Log.d(LogTag, "load scanner")
+        Log.d(blueDebug, "load scanner")
 
         // 假设你有一个RecyclerView来显示设备列表
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
@@ -248,10 +240,10 @@ class MainActivity : ComponentActivity() {
             ActivityCompat.requestPermissions(this,
                 arrayOf(permission.BLUETOOTH_CONNECT),
                 bluetoothPermissionConnect)
-            Log.d(LogTag, "connectToDevice lack of BLUETOOTH_CONNECT")
+            Log.d(blueDebug, "connectToDevice lack of BLUETOOTH_CONNECT")
             return
         }
-        Log.d(LogTag, "try to connect " + device.address )
+        Log.d(blueDebug, "try to connect " + device.address )
 
         bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
 
@@ -260,28 +252,28 @@ class MainActivity : ComponentActivity() {
                 // 尝试连接，如果bluetoothSocket不为null，connect()方法将被调用
                 socket.connect()
 
-                Log.d(LogTag,"Bluetooth socket connected successfully.")
+                Log.d(blueDebug,"Bluetooth socket connected successfully.")
                 // 获取输入输出流
                 outputStream = bluetoothSocket?.outputStream
                 inputStream = bluetoothSocket?.inputStream
 
                 // 连接成功后的处理
-                Log.d(LogTag, "listenForIncomingData")
+                Log.d(blueDebug, "listenForIncomingData")
                 // 在这里开始监听接收到的数据
                 listenForIncomingData()
             } catch (e: IOException) {
                 // 捕获并处理IOException，这是connect()方法可能抛出的异常类型
-                Log.d(LogTag,"Failed to connect to Bluetooth socket: ${e.message}")
+                Log.d(blueDebug,"Failed to connect to Bluetooth socket: ${e.message}")
 
                 e.printStackTrace() // 可选，用于在日志中打印完整的堆栈跟踪
             }
         } ?: run {
-            Log.d(LogTag,"Bluetooth socket is null, cannot connect.")
+            Log.d(blueDebug,"Bluetooth socket is null, cannot connect.")
         }
     }
 
     private fun sendData(data: String) {
-        Log.d(LogTag, "Sent data: $data")
+        Log.d(blueDebug, "Sent data: $data")
         if(outputStream == null) {
             println("sendData output is null")
         } else {
@@ -302,7 +294,7 @@ class MainActivity : ComponentActivity() {
                     // 读取输入流中的数据
                     bytes = inputStream?.read(buffer) ?: break
                     val incomingMessage = String(buffer, 0, bytes)
-                    Log.d(LogTag, "Received data: $incomingMessage")
+                    Log.d(blueDebug, "Received data: $incomingMessage")
 
                     // 在UI线程中更新UI
                     Handler(Looper.getMainLooper()).post {
@@ -387,26 +379,18 @@ class MainActivity : ComponentActivity() {
 }
 
 class DeviceAdapter(private val devices: List<BluetoothDevice>) : RecyclerView.Adapter<DeviceAdapter.ViewHolder>() {
-    private val LogTag = "blue_debug"
+    private val blueDebug = "blue_debug"
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_layout, parent, false)
         return ViewHolder(itemView)
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        Log.d(LogTag,"onBindViewHolder")
+        Log.d(blueDebug,"onBindViewHolder")
         val device = devices[position]
-        if (ActivityCompat.checkSelfPermission(
-                holder.itemView.context,
-                permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.d(LogTag,"no BLUETOOTH_CONNECT permission")
-            // 请求权限
-            return
-        }
-        holder.deviceName.text = device.name +","+ device.address
+        holder.deviceName.text = "name:$device.name,address:$device.address"
     }
 
     override fun getItemCount(): Int = devices.size
