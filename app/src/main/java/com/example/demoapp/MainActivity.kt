@@ -130,6 +130,7 @@ class MainActivity : ComponentActivity() {
         val sdkVersion = Build.VERSION.SDK_INT
         val map = HashMap<Int, Int>()
         map[Build.VERSION_CODES.O_MR1] = 8
+        map[Build.VERSION_CODES.O] = 8 // android 8.1
         map[Build.VERSION_CODES.P] = 9
         map[Build.VERSION_CODES.Q] = 10
         map[Build.VERSION_CODES.R] = 11
@@ -153,7 +154,7 @@ class MainActivity : ComponentActivity() {
 
     private fun addToDeviceList(device: BluetoothDevice) {
         if (!deviceList.contains(device)) {
-            Log.d(blueDebug, "add device " + device.name +"," + device.address)
+            Log.d(blueDebug, "add device " + device.name +","  + device.alias + ","+ device.address )
             deviceList.add(device)
             deviceAdapter.notifyItemInserted(deviceList.size - 1)
         }
@@ -389,7 +390,7 @@ class DeviceAdapter(private val devices: List<BluetoothDevice>) : RecyclerView.A
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         Log.d(blueDebug,"onBindViewHolder")
         val device = devices[position]
-        holder.deviceName.text = "name:$device.name,address:$device.address"
+        holder.deviceName.text = "name:$device.name,alias:$device.alias,address:$device.address"
     }
 
     override fun getItemCount(): Int = devices.size
