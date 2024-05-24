@@ -18,6 +18,9 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.content.BroadcastReceiver
+import android.content.Intent
+import android.content.IntentFilter
 import android.location.Location
 import android.os.Handler
 import android.os.Looper
@@ -44,13 +47,79 @@ import java.util.UUID
 
 
 class MainActivity : ComponentActivity() {
+    private val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+    // 经典蓝牙
+    private fun startDiscovery() {
+        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+        registerReceiver(foundReceiver, filter)
+
+        // 还可以注册其他扫描相关的广播，如扫描完成等
+        val scanFinishedFilter = IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+        registerReceiver(scanFinishedReceiver, scanFinishedFilter)
+
+        if (bluetoothAdapter.isDiscovering == false) {
+            bluetoothAdapter.startDiscovery()
+        }
+    }
+
+    private val foundReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val action = intent.action
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                // 从Intent中获取设备信息
+                val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                if (device != null) {
+                    addToDeviceList(device)
+                } else {
+                    Log.d(blueDebug,"device is null")
+                }
+
+            }
+        }
+    }
+
+    private val scanFinishedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            // 扫描完成，可以取消注册广播接收器或执行其他操作
+            unregisterReceiver(foundReceiver)
+
+            // 这里可以更新UI表示扫描已完成
+            Log.d(blueDebug,"Scan finished")
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // 确保在Activity销毁时取消注册广播接收器
+        unregisterReceiver(foundReceiver)
+        unregisterReceiver(scanFinishedReceiver)
+    }
+
+    // 处理蓝牙开启请求的回调（如果需要的话）
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_ENABLE_BT) {
+            if (resultCode == RESULT_OK) {
+                // 用户同意开启蓝牙
+                startDiscovery()
+            } else {
+                // 用户拒绝开启蓝牙
+                // 显示错误消息或执行其他操作
+            }
+        }
+    }
+
+    // REQUEST_ENABLE_BT 是你定义的请求码，用于在 onActivityResult 中识别请求
+    private val REQUEST_ENABLE_BT = 1
+    // 经典蓝牙end
+
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private val locationPermissionRequestCode = 100
     private val bluetoothPermissionScan = 101 // 自定义的请求码
     private val bluetoothPermissionConnect = 102 // 自定义的请求码
 
     // 蓝牙扫描
-    private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
@@ -69,61 +138,63 @@ class MainActivity : ComponentActivity() {
     private val androidVersion = getAndroidVersion()
     // 蓝牙连接发送指令
     private val blueDebug = "blue_debug"
-    private fun startScan() {
-        Log.d(blueDebug, "start scan")
-        val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
-        if (bluetoothLeScanner == null) {
-            Toast.makeText(this, "scanner is null, open bluetooth?", Toast.LENGTH_SHORT).show()
-            return
-        }
 
-        val scanSettings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .build()
-
-        val filters = emptyList<ScanFilter>() // 如果有需要，可以添加过滤条件
-
-        // 扫描权限
-        if (androidVersion > 12 &&
-            ActivityCompat.checkSelfPermission(
-                this,
-                permission.BLUETOOTH_SCAN
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // 请求权限
-            ActivityCompat.requestPermissions(this,
-                arrayOf(permission.BLUETOOTH_SCAN),
-                bluetoothPermissionScan)
-            return
-        }
-        // 连接权限
-        if ( androidVersion > 12 && ActivityCompat.checkSelfPermission(
-                this,
-                permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // 请求权限
-            ActivityCompat.requestPermissions(this,
-                arrayOf(permission.BLUETOOTH_CONNECT),
-                bluetoothPermissionConnect)
-            return
-        }
-        // 还需要定位权限
-        // java.lang.SecurityException: Need ACCESS_COARSE_LOCATION or ACCESS_FINE_LOCATION permission to get scan results
-        if ( androidVersion > 6 && ActivityCompat.checkSelfPermission(
-                this,
-                permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // 请求权限
-            ActivityCompat.requestPermissions(this,
-                arrayOf(permission.ACCESS_FINE_LOCATION),
-                locationPermissionRequestCode
-                )
-            return
-        }
-        bluetoothLeScanner.startScan(filters, scanSettings, scanCallback)
-    }
+//    private fun startScan() {
+//        Log.d(blueDebug, "start scan")
+//        val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
+//        if (bluetoothLeScanner == null) {
+//            Toast.makeText(this, "scanner is null, open bluetooth?", Toast.LENGTH_SHORT).show()
+//            return
+//        }
+//
+//        val scanSettings = ScanSettings.Builder()
+//            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+//            .build()
+//
+//        val filters = emptyList<ScanFilter>() // 如果有需要，可以添加过滤条件
+//
+//        // 扫描权限
+//        if (androidVersion > 12 &&
+//            ActivityCompat.checkSelfPermission(
+//                this,
+//                permission.BLUETOOTH_SCAN
+//            ) != PackageManager.PERMISSION_GRANTED
+//        ) {
+//            // 请求权限
+//            ActivityCompat.requestPermissions(this,
+//                arrayOf(permission.BLUETOOTH_SCAN),
+//                bluetoothPermissionScan)
+//            return
+//        }
+//        // 连接权限
+//        if ( androidVersion > 12 && ActivityCompat.checkSelfPermission(
+//                this,
+//                permission.BLUETOOTH_CONNECT
+//            ) != PackageManager.PERMISSION_GRANTED
+//        ) {
+//            // 请求权限
+//            ActivityCompat.requestPermissions(this,
+//                arrayOf(permission.BLUETOOTH_CONNECT),
+//                bluetoothPermissionConnect)
+//            return
+//        }
+//        // 还需要定位权限
+//        // java.lang.SecurityException: Need ACCESS_COARSE_LOCATION or ACCESS_FINE_LOCATION permission to get scan results
+//        if ( androidVersion > 6 && ActivityCompat.checkSelfPermission(
+//                this,
+//                permission.ACCESS_FINE_LOCATION
+//            ) != PackageManager.PERMISSION_GRANTED
+//        ) {
+//            // 请求权限
+//            ActivityCompat.requestPermissions(this,
+//                arrayOf(permission.ACCESS_FINE_LOCATION),
+//                locationPermissionRequestCode
+//                )
+//            return
+//        }
+//        bluetoothAdapter.startDiscovery()
+//        bluetoothLeScanner.startScan(filters, scanSettings, scanCallback)
+//    }
 
 
     private fun getAndroidVersion(): Int {
@@ -139,18 +210,18 @@ class MainActivity : ComponentActivity() {
         return map[sdkVersion] ?:100
     }
 
-    private fun stopScan() {
-        Log.d(blueDebug, "执行指令,停止扫描")
-        if (androidVersion > 12 && ActivityCompat.checkSelfPermission(
-                this,
-                permission.BLUETOOTH_SCAN
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-
-            return
-        }
-        bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
-    }
+//    private fun stopScan() {
+//        Log.d(blueDebug, "执行指令,停止扫描")
+//        if (androidVersion > 12 && ActivityCompat.checkSelfPermission(
+//                this,
+//                permission.BLUETOOTH_SCAN
+//            ) != PackageManager.PERMISSION_GRANTED
+//        ) {
+//
+//            return
+//        }
+//        bluetoothAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
+//    }
 
     private fun addToDeviceList(device: BluetoothDevice) {
         if (!deviceList.contains(device)) {
@@ -190,7 +261,6 @@ class MainActivity : ComponentActivity() {
         val exeBtn: Button = findViewById(R.id.execButton)
         val cmdText :EditText = findViewById(R.id.commandText)
         exeBtn.setOnClickListener{
-            stopScan()
             Toast.makeText(this, "执行:" + cmdText.text.toString(), Toast.LENGTH_SHORT).show()
 
             val device: BluetoothDevice = deviceList[0]
@@ -218,7 +288,7 @@ class MainActivity : ComponentActivity() {
         // 手动扫描蓝牙
         val selectBtn: Button = findViewById(R.id.scanBlooth)
         selectBtn.setOnClickListener{
-            startScan()
+            startDiscovery()
         }
 
 
@@ -310,17 +380,17 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        // 关闭连接
-        try {
-            inputStream?.close()
-            outputStream?.close()
-            bluetoothSocket?.close()
-        } catch (e: IOException){
-
-        }
-    }
+//    override fun onDestroy() {
+//        super.onDestroy()
+//        // 关闭连接
+//        try {
+//            inputStream?.close()
+//            outputStream?.close()
+//            bluetoothSocket?.close()
+//        } catch (e: IOException){
+//
+//        }
+//    }
 
     private fun getCurrentLocation() {
         if (isLocationEnabled()) {
