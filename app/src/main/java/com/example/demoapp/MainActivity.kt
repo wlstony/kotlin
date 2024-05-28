@@ -100,8 +100,7 @@ class MainActivity : ComponentActivity() {
                 // 用户同意开启蓝牙
                 startDiscovery()
             } else {
-                // 用户拒绝开启蓝牙
-                // 显示错误消息或执行其他操作
+                Toast.makeText(this, "请同意开启蓝牙", Toast.LENGTH_SHORT).show()
             }
         }
     }
