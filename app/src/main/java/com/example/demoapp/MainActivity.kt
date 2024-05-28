@@ -288,7 +288,7 @@ class MainActivity : ComponentActivity() {
                     Handler(Looper.getMainLooper()).post {
                         // 显示接收到的数据，比如通过Toast或TextView
                        val textView: TextView = findViewById(R.id.showResponse)
-                        textView.text = incomingMessage
+                        textView.text += incomingMessage
                     }
                 } catch (e: IOException) {
                     Log.d(blueDebug, "响应读取异常" + e.toString())
