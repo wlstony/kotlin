@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import android.Manifest.permission
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
@@ -265,6 +266,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun listenForIncomingData() {
         if (isListening.get() ) {
             Log.d(blueDebug,"listening has started")
@@ -288,7 +290,7 @@ class MainActivity : ComponentActivity() {
                     Handler(Looper.getMainLooper()).post {
                         // 显示接收到的数据，比如通过Toast或TextView
                        val textView: TextView = findViewById(R.id.showResponse)
-                        textView.text += incomingMessage
+                        textView.text = textView.text.toString() + incomingMessage
                     }
                 } catch (e: IOException) {
                     Log.d(blueDebug, "响应读取异常" + e.toString())
