@@ -35,6 +35,7 @@ import com.google.android.gms.tasks.OnTokenCanceledListener
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.lang.Thread.sleep
 import java.util.HashMap
 import java.util.UUID
 
@@ -174,7 +175,6 @@ class MainActivity : ComponentActivity() {
         exeBtn.setOnClickListener{
             val device: BluetoothDevice = deviceList[deviceAdapter.getSelectedPosition()]
             Toast.makeText(this, "执行:" + cmdText.text.toString() + " to " + device.address, Toast.LENGTH_SHORT).show()
-
             connectToDevice(device)
             val cmd: String = cmdText.text.toString() + "\n"
             sendData(cmd)
@@ -201,8 +201,7 @@ class MainActivity : ComponentActivity() {
         selectBtn.setOnClickListener{
             startDiscovery()
         }
-
-
+        listenForIncomingData()
     }
 
     private fun connectToDevice(device: BluetoothDevice) {
@@ -228,19 +227,13 @@ class MainActivity : ComponentActivity() {
             try {
                 // 尝试连接，如果bluetoothSocket不为null，connect()方法将被调用
                 socket.connect()
-
                 Log.d(blueDebug,"Bluetooth socket connected successfully.")
                 // 获取输入输出流
                 outputStream = socket.outputStream
                 inputStream = socket.inputStream
-
-                // 连接成功后的处理
-                Log.d(blueDebug, "listenForIncomingData")
-                // 在这里开始监听接收到的数据
-                listenForIncomingData()
             } catch (e: IOException) {
                 Toast.makeText(this, "Failed to connect to Bluetooth socket: ${e.message}", Toast.LENGTH_SHORT).show()
-
+                socket.close()
                 // 捕获并处理IOException，这是connect()方法可能抛出的异常类型
                 Log.d(blueDebug,"Failed to connect to Bluetooth socket: ${e.message}")
                 e.printStackTrace() // 可选，用于在日志中打印完整的堆栈跟踪
@@ -258,7 +251,6 @@ class MainActivity : ComponentActivity() {
             Log.d(blueDebug,"sendData output is null")
         } else {
             outputStream?.write(data.toByteArray())
-
         }
     }
 
@@ -267,9 +259,17 @@ class MainActivity : ComponentActivity() {
         Thread {
             val buffer = ByteArray(1024)
             var bytes: Int
-
             // 保持循环以持续监听数据
             while (true) {
+                if (inputStream == null) {
+                    try {
+                        sleep(2000) // 休眠 2 秒
+                    } catch (e: InterruptedException) {
+                        // 处理 InterruptedException，例如记录日志或重新抛出
+                        Log.d(blueDebug, "sleep exception" + e.toString())
+                        e.printStackTrace()
+                    }
+                }
                 try {
                     // 读取输入流中的数据
                     bytes = inputStream?.read(buffer) ?: break
@@ -283,8 +283,8 @@ class MainActivity : ComponentActivity() {
                         textView.text = incomingMessage
                     }
                 } catch (e: IOException) {
+                    Log.d(blueDebug, "响应读取异常" + e.toString())
                     e.printStackTrace()
-                    break
                 }
             }
         }.start()
