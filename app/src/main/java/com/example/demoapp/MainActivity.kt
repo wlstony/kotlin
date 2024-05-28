@@ -176,9 +176,9 @@ class MainActivity : ComponentActivity() {
             val device: BluetoothDevice = deviceList[deviceAdapter.getSelectedPosition()]
             Toast.makeText(this, "执行:" + cmdText.text.toString() + " to " + device.address, Toast.LENGTH_SHORT).show()
             connectToDevice(device)
+            listenForIncomingData()
             val cmd: String = cmdText.text.toString() + "\n"
             sendData(cmd)
-
         }
 
         Log.d(blueDebug, "load scanner")
@@ -201,7 +201,6 @@ class MainActivity : ComponentActivity() {
         val selectBtn: Button = findViewById(R.id.scanBlooth)
         selectBtn.setOnClickListener{
             startDiscovery()
-            listenForIncomingData()
         }
     }
     private val isListening = AtomicBoolean(false)
