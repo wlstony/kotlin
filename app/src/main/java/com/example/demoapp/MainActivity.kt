@@ -298,6 +298,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }.start()
+
     }
 
     private fun getCurrentLocation() {

@@ -12,11 +12,12 @@
         android:inputType="text"
         android:hint="请输入指令文本v1" />
 
-    <TextView
+    <EditText
         android:id="@+id/showResponse"
         android:layout_width="match_parent"
         android:layout_height="300dp"
-        android:text="返回" />
+        android:inputType="text"
+        android:hint="返回" />
 
     <Button
         android:id="@+id/execButton"
