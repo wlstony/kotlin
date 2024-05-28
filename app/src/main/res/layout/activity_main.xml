@@ -14,30 +14,48 @@
     <TextView
         android:id="@+id/showResponse"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
+        android:layout_height="300dp"
         android:text="响应" />
-    <Button
-        android:id="@+id/cleanTextButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="清空响应" />
 
-    <Button
-        android:id="@+id/execButton"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="执行指令" />
+        android:orientation="horizontal"
+        android:padding="16dp">
+        <Button
+            android:id="@+id/cleanTextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="清空响应" />
 
-    <Button
-        android:id="@+id/uploadLocation"
+        <Button
+            android:id="@+id/execButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="执行指令" />
+        <Button
+            android:id="@+id/uploadLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="上传定位" />
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="上传定位" />
-    <Button
-        android:id="@+id/scanBlooth"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="扫描蓝牙"/>
+        android:orientation="horizontal"
+        android:padding="16dp">
+        <Button
+            android:id="@+id/scanBlooth"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="扫描蓝牙"/>
+    </LinearLayout>
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
