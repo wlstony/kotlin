@@ -201,9 +201,11 @@ class MainActivity : ComponentActivity() {
         val selectBtn: Button = findViewById(R.id.scanBlooth)
         selectBtn.setOnClickListener{
             startDiscovery()
+            listenForIncomingData()
         }
-        listenForIncomingData()
     }
+    private val isListening = AtomicBoolean(false)
+
 
     private val connections:MutableMap<String, BluetoothSocket> = HashMap()
 
@@ -266,21 +268,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun listenForIncomingData() {
+        if (isListening.get() ) {
+            Log.d(blueDebug,"listening has started")
+            return
+        }
+        Log.d(blueDebug,"start listening")
+        isListening.set(true)
         // 在一个单独的线程中监听数据
         Thread {
             val buffer = ByteArray(1024)
             var bytes: Int
             // 保持循环以持续监听数据
             while (true) {
-                if (inputStream == null) {
-                    try {
-                        sleep(2000) // 休眠 2 秒
-                    } catch (e: InterruptedException) {
-                        // 处理 InterruptedException，例如记录日志或重新抛出
-                        Log.d(blueDebug, "sleep exception" + e.toString())
-                        e.printStackTrace()
-                    }
-                }
                 try {
                     // 读取输入流中的数据
                     bytes = inputStream?.read(buffer) ?: break
