@@ -12,12 +12,16 @@
         android:inputType="text"
         android:hint="请输入指令文本v1" />
 
-    <EditText
+    <TextView
         android:id="@+id/showResponse"
         android:layout_width="match_parent"
         android:layout_height="300dp"
-        android:inputType="text"
-        android:hint="返回" />
+        android:text="响应" />
+    <Button
+        android:id="@+id/cleanTextButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="清空响应" />
 
     <Button
         android:id="@+id/execButton"

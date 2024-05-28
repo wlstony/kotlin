@@ -202,6 +202,12 @@ class MainActivity : ComponentActivity() {
         selectBtn.setOnClickListener{
             startDiscovery()
         }
+
+        val cleanBtn: Button = findViewById(R.id.cleanTextButton)
+        cleanBtn.setOnClickListener{
+            val textView: TextView = findViewById(R.id.showResponse)
+            textView.text = ""
+        }
     }
     private val isListening = AtomicBoolean(false)
 
