@@ -224,7 +224,6 @@ class MainActivity : ComponentActivity() {
         Log.d(blueDebug, "try to connect " + device.address )
 
         bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
-
         bluetoothSocket?.let { socket ->
             try {
                 // 尝试连接，如果bluetoothSocket不为null，connect()方法将被调用
@@ -232,8 +231,8 @@ class MainActivity : ComponentActivity() {
 
                 Log.d(blueDebug,"Bluetooth socket connected successfully.")
                 // 获取输入输出流
-                outputStream = bluetoothSocket?.outputStream
-                inputStream = bluetoothSocket?.inputStream
+                outputStream = socket.outputStream
+                inputStream = socket.inputStream
 
                 // 连接成功后的处理
                 Log.d(blueDebug, "listenForIncomingData")
