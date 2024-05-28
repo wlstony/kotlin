@@ -38,6 +38,7 @@ import java.io.OutputStream
 import java.lang.Thread.sleep
 import java.util.HashMap
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 class MainActivity : ComponentActivity() {
@@ -177,6 +178,7 @@ class MainActivity : ComponentActivity() {
             connectToDevice(device)
             val cmd: String = cmdText.text.toString() + "\n"
             sendData(cmd)
+
         }
 
         Log.d(blueDebug, "load scanner")
@@ -203,7 +205,15 @@ class MainActivity : ComponentActivity() {
         listenForIncomingData()
     }
 
+    private val connections:MutableMap<String, BluetoothSocket> = HashMap()
+
     private fun connectToDevice(device: BluetoothDevice) {
+        // 已经连接了
+        if (connections.containsKey(device.address) && connections[device.address]?.isConnected == true) {
+            outputStream = connections[device.address]?.outputStream
+            inputStream = connections[device.address]?.inputStream
+            return
+        }
         // 尝试连接设备
         // 这里只是一个示例，你需要处理异常和错误情况
         val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB") // SPP UUID，根据实际情况修改
@@ -226,6 +236,8 @@ class MainActivity : ComponentActivity() {
             try {
                 // 尝试连接，如果bluetoothSocket不为null，connect()方法将被调用
                 socket.connect()
+                connections[device.address] = socket
+
                 Log.d(blueDebug,"Bluetooth socket connected successfully.")
                 // 获取输入输出流
                 outputStream = socket.outputStream
