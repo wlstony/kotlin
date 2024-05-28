@@ -137,7 +137,6 @@ class MainActivity : ComponentActivity() {
 
     private fun addToDeviceList(device: BluetoothDevice) {
         if (!deviceList.contains(device)) {
-            Log.d(blueDebug, "add device " + device.name +","  + device.alias + ","+ device.address )
             deviceList.add(device)
             deviceAdapter.notifyItemInserted(deviceList.size - 1)
         }
