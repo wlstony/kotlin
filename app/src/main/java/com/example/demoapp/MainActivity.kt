@@ -265,7 +265,7 @@ class MainActivity : ComponentActivity() {
 
             val device: BluetoothDevice = deviceList[0]
             connectToDevice(device)
-            val cmd: String = cmdText.text.toString()
+            val cmd: String = cmdText.text.toString() + "\n"
             sendData(cmd)
         }
 
