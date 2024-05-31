@@ -28,7 +28,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.adapter.DeviceAdapter
 import com.example.tool.Util
-import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationToken
@@ -113,7 +112,6 @@ class MainActivity : ComponentActivity() {
     private val requestEnableBt = 1
     // 经典蓝牙end
 
-    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private val locationPermissionRequestCode = 100
     private val bluetoothPermissionScan = 101 // 自定义的请求码
     private val bluetoothPermissionConnect = 102 // 自定义的请求码
@@ -156,7 +154,6 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
 
         // 发送定位的代码
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         val sendLocationBtn: Button = findViewById(R.id.uploadLocation)
         sendLocationBtn.setOnClickListener{
             if (ContextCompat.checkSelfPermission(this, permission.ACCESS_FINE_LOCATION)
@@ -166,10 +163,8 @@ class MainActivity : ComponentActivity() {
                     arrayOf(permission.ACCESS_FINE_LOCATION),
                     locationPermissionRequestCode
                 )
-            } else {
-                getCurrentLocation()
+                sendLocation()
             }
-
         }
 
         val exeBtn: Button = findViewById(R.id.execButton)
@@ -275,7 +270,9 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
+    private  fun sendLocation() {
+        com.example.location.Location().GetCurrentPosition()
+    }
     @SuppressLint("SetTextI18n")
     private fun listenForIncomingData() {
         if (isListening.get() ) {
@@ -300,11 +297,12 @@ class MainActivity : ComponentActivity() {
                     Handler(Looper.getMainLooper()).post {
                         // 显示接收到的数据，比如通过Toast或TextView
                        val textView: TextView = findViewById(R.id.showResponse)
-                        if (incomingMessage.contains("\n")) {
-                            Util.formatTimestampToDate()
-                        } else {
-                            textView.text = textView.text.toString() + incomingMessage
-                        }
+                        textView.text = textView.text.toString() + incomingMessage
+//                        if (incomingMessage.contains("\n")) {
+//                            Util.formatTimestampToDate()
+//                        } else {
+//                            textView.text = textView.text.toString() + incomingMessage
+//                        }
                     }
                 } catch (e: IOException) {
                     Log.d(blueDebug, "响应读取异常" + e.toString())
@@ -315,51 +313,12 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    private fun getCurrentLocation() {
-        if (isLocationEnabled()) {
-            if (ContextCompat.checkSelfPermission(this, permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(permission.ACCESS_FINE_LOCATION),
-                    locationPermissionRequestCode
-                )
-            }
-            fusedLocationProviderClient.getCurrentLocation(
-                LocationRequest.PRIORITY_HIGH_ACCURACY, object : CancellationToken() {
-                    override fun onCanceledRequested(p0: OnTokenCanceledListener) = CancellationTokenSource().token
-
-                    override fun isCancellationRequested() = false
-                }).addOnSuccessListener(this) { location: Location? ->
-                // Got last known location. In some rare situations this can be null.
-                location?.let {
-                    val latitude = location.latitude
-                    val longitude = location.longitude
-                    Toast.makeText(this, "Latitude: $latitude, Longitude: $longitude", Toast.LENGTH_LONG).show()
-                }
-            }.addOnFailureListener(this) { e ->
-                // Failed to get location
-                e.printStackTrace()
-                Toast.makeText(this, "Failed to get location", Toast.LENGTH_LONG).show()
-            }
-        } else {
-            Toast.makeText(this, "Please enable location", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun isLocationEnabled(): Boolean {
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-    }
 
     @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == locationPermissionRequestCode) {
-            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                getCurrentLocation()
-            } else {
+            if ((grantResults.isNotEmpty() && grantResults[0] != PackageManager.PERMISSION_GRANTED)) {
                 Toast.makeText(this, "Location permission denied", Toast.LENGTH_LONG).show()
             }
         }
