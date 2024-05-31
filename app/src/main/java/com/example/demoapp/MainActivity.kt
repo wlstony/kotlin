@@ -27,6 +27,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.adapter.DeviceAdapter
+import com.example.tool.Util
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
@@ -36,7 +37,8 @@ import com.google.android.gms.tasks.OnTokenCanceledListener
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.lang.Thread.sleep
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.HashMap
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -272,6 +274,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
+
     @SuppressLint("SetTextI18n")
     private fun listenForIncomingData() {
         if (isListening.get() ) {
@@ -296,7 +300,11 @@ class MainActivity : ComponentActivity() {
                     Handler(Looper.getMainLooper()).post {
                         // 显示接收到的数据，比如通过Toast或TextView
                        val textView: TextView = findViewById(R.id.showResponse)
-                        textView.text = textView.text.toString() + incomingMessage
+                        if (incomingMessage.contains("\n")) {
+                            Util.formatTimestampToDate()
+                        } else {
+                            textView.text = textView.text.toString() + incomingMessage
+                        }
                     }
                 } catch (e: IOException) {
                     Log.d(blueDebug, "响应读取异常" + e.toString())
